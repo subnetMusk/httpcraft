@@ -6,21 +6,25 @@ It is built on top of the excellent [requests](https://docs.python-requests.org/
 
 ---
 
+
 ## 📦 Installation
 
-Install from GitHub:
+Install directly from GitHub:
 
 ```bash
 pip install git+https://github.com/subnetMusk/httpcraft.git
 ```
 
-For development and testing:
+Or, if you want the `httpcraft` CLI to be available **system-wide**, run:
 
 ```bash
-pip install -r requirements-dev.txt
+sudo pip install git+https://github.com/subnetMusk/httpcraft.git
 ```
 
+> ⚠️ Warning: Using `sudo pip` is generally discouraged, but valid for trusted tools like this.
+
 ---
+
 
 ## 🛠 Requirements
 
@@ -28,8 +32,14 @@ pip install -r requirements-dev.txt
 - [requests](https://pypi.org/project/requests/)
 - [beautifulsoup4](https://pypi.org/project/beautifulsoup4/)
 
+For development:
+
+```bash
+pip install -r requirements-dev.txt
+```
+
 ---
----
+
 
 ## 🧠 Core Data Types
 
@@ -73,59 +83,55 @@ HttpCraftExchange(
 
 ---
 
+
 ## 🔧 API Overview
 
 ### 🎯 Target configuration
 ```python
-HttpCraft(base_url: str)
-set_target(url: str)
-get_target() -> str
-set_port(port: int)
-get_port() -> int
+set_target(url)
+get_target()
+set_port(port)
+get_port()
 reset_target()
 ```
 
----
 
 ### 🧾 Payload management
 ```python
-set_payload(payload: dict, mode: str = "json")
-get_payload() -> dict
-get_payload_mode() -> str
-set_payload_entry(key: str, value: any)
-get_payload_entry(key: str) -> any
-remove_payload_entry(key: str)
-append_payload(data: dict)
+set_payload(data, mode="json")
+get_payload()
+get_payload_mode()
+set_payload_entry(key, value)
+get_payload_entry(key)
+remove_payload_entry(key)
+append_payload(dict)
 clear_payload()
 ```
 
----
 
 ### 🧠 Header handling
 ```python
-set_headers(headers: dict)
-get_headers() -> dict
-set_header_entry(key: str, value: str)
-get_header_entry(key: str) -> str
-remove_header_entry(key: str)
-append_headers(new_data: dict)
+set_headers(dict)
+get_headers()
+set_header_entry(key, value)
+get_header_entry(key)
+remove_header_entry(key)
+append_headers(dict)
 clear_headers()
 ```
 
----
 
 ### 🍪 Cookie handling
 ```python
-set_cookies(cookies: dict)
-get_cookies() -> dict
-add_cookie(key: str, value: str)
-get_cookie(key: str) -> str
-remove_cookie(key: str)
-append_cookies(new_data: dict)
+set_cookies(dict)
+get_cookies()
+add_cookie(key, value)
+get_cookie(key)
+remove_cookie(key)
+append_cookies(dict)
 clear_cookies()
 ```
 
----
 
 ### 🔒 CSRF token management
 ```python
@@ -133,7 +139,6 @@ set_csrf(mode: str = "input", field: str = "csrf_token")
 extract_csrf_token(html: str) -> str | None
 ```
 
----
 
 ### 📡 HTTP requests
 ```python
@@ -146,7 +151,6 @@ head(path="", port=None)
 ```
 Each method returns a `HttpCraftExchange`.
 
----
 
 ### 🧾 File operations
 ```python
@@ -161,7 +165,6 @@ load_cookies_from_file(filepath)
 save_history_to_file(filepath)
 ```
 
----
 
 ### 🐛 Debugging & History
 ```python
@@ -171,58 +174,37 @@ print_history()
 
 ---
 
-## 🧪 Running Tests
 
-```bash
-python3 runtests.py                # silent
-python3 runtests.py --verbose      # detailed
-HTTPCRAFT_VERBOSE=true python3 runtests.py  # alternative
-```
+## 🚀 CLI Usage
 
----
-
-
-## 🚀 CLI Usage (Optional)
-
-Although HttpCraft is intended for use as a Python library, it includes a minimal CLI interface for test execution and debugging purposes.
-
-### 🧪 Run internal test suite
-
-You can validate that the library is installed and working correctly by running:
+After installation, you can run from terminal:
 
 ```bash
 httpcraft --run-tests
 ```
 
-For more detailed output:
+This automatically:
+- Starts a local Flask server (`mock_server.py`)
+- Runs all integration tests
+- Cleans up afterward
+
+To run in verbose mode:
 
 ```bash
 httpcraft --run-tests --verbose
 ```
 
-This will execute the built-in test suite located in `tests/`.
-
----
-
-### 🆘 CLI Help
+To display help:
 
 ```bash
 httpcraft --help
 ```
 
-This command will show a basic summary of CLI usage:
+---
 
-```
-usage: httpcraft [-h] [--run-tests] [--verbose]
+## ✅ Test Behavior
 
-HttpCraft - HTTP request crafting and inspection tool
-
-options:
-  -h, --help        Show this help message and exit
-  --run-tests       Run internal test suite
-  --verbose         Enable verbose test output
-```
-
+Tests run automatically in CLI mode with `--run-tests` and do **not require any manual setup**. A local test server is launched automatically.
 
 ---
 
@@ -231,30 +213,24 @@ options:
 
 ```
 httpcraft/
-├── README.md
-├── requirements.txt
-├── requirements-dev.txt
-├── setup.cfg
-├── setup.py
-├── http_craft/
+├── httpcraft/
 │   ├── __init__.py
 │   ├── cli.py
-│   └── http_craft.py
-└── tests/
-    ├── __init__.py
-    ├── mock_server.py
-    ├── runtests.py
-    └── test_httpcraft.py
+│   └── httpcraft.py
+├── tests/
+│   ├── __init__.py
+│   ├── mock_server.py
+│   ├── runtests.py
+│   └── test_httpcraft.py
+├── README.md
+├── setup.py
+├── setup.cfg
+├── requirements.txt
+├── requirements-dev.txt
 ```
-
 ---
 
-## 🛠 Maintainer
 
-Developed by [subnetMusk](https://github.com/subnetMusk)
+## 📄 License
 
----
-
-## 📜 License
-
-MIT License
+MIT License. Built with ❤️ by subnetMusk.

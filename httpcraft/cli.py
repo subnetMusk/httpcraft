@@ -14,7 +14,7 @@ def main():
     args = parser.parse_args()
 
     if args.run_tests:
-        from tests.runtests import run_from_cli
+        from httpcraft.tests.runtests import run_from_cli        
         run_from_cli(verbose=args.verbose)
     else:
         print("HttpCraft - HTTP client library\n")

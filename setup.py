@@ -11,12 +11,7 @@ setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/subnetMusk/httpcraft",
-    packages=find_packages(),
-    entry_points={
-        "console_scripts": [
-            "httpcraft = http_craft.cli:main"
-        ]
-    },
+    packages=find_packages(),  # include httpcraft and httpcraft.tests
     install_requires=[
         "requests",
         "beautifulsoup4"
@@ -24,11 +19,14 @@ setup(
     extras_require={
         "dev": ["flask", "pytest"],
     },
+    entry_points={
+        "console_scripts": [
+            "httpcraft = httpcraft.cli:main"
+        ]
+    },
     classifiers=[
         "Programming Language :: Python :: 3",
         "Operating System :: OS Independent"
     ],
-    
     python_requires='>=3.7',
-    test_suite="tests"
 )
