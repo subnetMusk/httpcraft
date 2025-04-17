@@ -18,6 +18,7 @@ class HttpCraftRequest:
     headers: dict
     cookies: dict
     payload: dict
+    payload_type: str
 
     def to_dict(self):
         return {
@@ -27,8 +28,15 @@ class HttpCraftRequest:
             "method": self.method,
             "headers": self.headers,
             "cookies": self.cookies,
-            "payload": self.payload
+            "payload": self.payload,
+            "payload_type": self.payload_type
         }
+    
+    def was_json(self):
+        return self.payload_type == "json"
+
+    def was_form(self):
+        return self.payload_type == "form"
 
 @dataclass
 class HttpCraftResponse:
@@ -52,17 +60,17 @@ class HttpCraftExchange:
     timestamp: str
     request: HttpCraftRequest
     response: HttpCraftResponse
+    csrf_token_updated: bool = False  # default to False
 
     def to_dict(self):
         return {
             "timestamp": self.timestamp,
             "request": self.request.to_dict(),
-            "response": self.response.to_dict()
+            "response": self.response.to_dict(),
+            "csrf_token_updated": self.csrf_token_updated
         }
 
-
 class HttpCraft:
-    # Initialize HttpCraft with base URL and default configuration
     def __init__(self, base_url: str):
         parsed = urlparse(base_url)
         self.scheme = parsed.scheme or "http"
@@ -72,6 +80,7 @@ class HttpCraft:
 
         self.headers = {}
         self.payload = {}
+        self.payload_mode = "json"  # default mode
         self.cookies = {}
         self.history = {}
         self.session = requests.Session()
@@ -96,10 +105,20 @@ class HttpCraft:
 
     # Reset all configuration and state
     def reset(self):
+        self.scheme = "http"
+        self.host = ""
+        self.port = None
         self.base_url = ""
+
         self.headers = {}
         self.payload = {}
+        self.payload_mode = "json"  # default mode
         self.cookies = {}
+        self.history = {}
+        self.session = requests.Session()
+
+        self.csrf_mode = "none"
+        self.csrf_field = "csrf_token"
 
     ''' --------- TARGET --------- '''
     # Build full URL using base, host, and optional override port
@@ -187,13 +206,19 @@ class HttpCraft:
     ''' -------------------------- '''
 
     ''' -------- PAYLOAD --------- '''
-    # Set the entire payload dictionary
-    def set_payload(self, payload):
+    # Set the entire payload and its mode ("json" or "form")
+    def set_payload(self, payload: dict, mode: str = "json"):
+        assert mode in ["json", "form"], "Payload mode must be either 'json' or 'form'"
         self.payload = payload
+        self.payload_mode = mode
 
     # Get the entire payload
     def get_payload(self):
         return self.payload
+
+    # Get the current payload mode ("json" or "form")
+    def get_payload_mode(self):
+        return self.payload_mode
 
     # Set or update a single payload entry
     def set_payload_entry(self, key, value):
@@ -203,18 +228,19 @@ class HttpCraft:
     def get_payload_entry(self, key):
         return self.payload.get(key, "no entry for this key")
 
-    # Remove a specific entry from payload
+    # Remove a specific entry from the payload
     def remove_payload_entry(self, key):
         if key in self.payload:
             del self.payload[key]
 
-    # Append or update multiple payload entries
+    # Append or update multiple entries in the payload
     def append_payload(self, new_data: dict):
         self.payload.update(new_data)
 
-    # Clear the payload
+    # Clear the payload completely (but keep current mode)
     def clear_payload(self):
         self.payload = {}
+        self.payload_mode = "json"  # reset to default mode
     ''' -------------------------- '''
 
     ''' -------- COOKIES --------- '''
@@ -260,10 +286,11 @@ class HttpCraft:
                 "csrf_field": self.csrf_field,
                 "headers": self.headers,
                 "cookies": self.cookies,
-                "payload": self.payload
+                "payload": self.payload,
+                "payload_mode": self.payload_mode
             }
-            with open(filepath, 'w') as f:
-                json.dump(config, f, indent=2)
+            with open(filepath, 'w', encoding='utf-8') as f:
+                json.dump(config, f, indent=2, ensure_ascii=False)
             print(f"[+] Configuration saved to '{filepath}'")
         except Exception as e:
             print(f"[!] Error saving configuration: {e}")
@@ -274,7 +301,7 @@ class HttpCraft:
             print(f"[!] File '{filepath}' does not exist.")
             return
         try:
-            with open(filepath, 'r') as f:
+            with open(filepath, 'r', encoding='utf-8') as f:
                 config = json.load(f)
                 self.base_url = config.get("base_url", "")
                 self.host = config.get("host", "")
@@ -284,40 +311,41 @@ class HttpCraft:
                 self.headers = config.get("headers", {}) if isinstance(config.get("headers"), dict) else {}
                 self.cookies = config.get("cookies", {}) if isinstance(config.get("cookies"), dict) else {}
                 self.payload = config.get("payload", {}) if isinstance(config.get("payload"), dict) else {}
+                self.payload_mode = config.get("payload_mode", "json")  # fallback to json if missing
             print(f"[+] Configuration loaded from '{filepath}'")
         except Exception as e:
             print(f"[!] Error loading configuration: {e}")
 
-    # Load payload from file
+    # Load payload from file (JSON only)
     def load_payload_from_file(self, filepath):
-        with open(filepath, 'r') as f:
+        with open(filepath, 'r', encoding='utf-8') as f:
             self.payload = json.load(f)
 
     # Save payload to file
     def save_payload_to_file(self, filepath):
-        with open(filepath, 'w') as f:
-            json.dump(self.payload, f, indent=4)
+        with open(filepath, 'w', encoding='utf-8') as f:
+            json.dump(self.payload, f, indent=4, ensure_ascii=False)
 
     # Load headers from file
     def load_headers_from_file(self, filepath):
-        with open(filepath, 'r') as f:
+        with open(filepath, 'r', encoding='utf-8') as f:
             self.headers = json.load(f)
 
     # Save headers to file
     def save_headers_to_file(self, filepath):
-        with open(filepath, 'w') as f:
-            json.dump(self.headers, f, indent=4)
+        with open(filepath, 'w', encoding='utf-8') as f:
+            json.dump(self.headers, f, indent=4, ensure_ascii=False)
 
     # Load cookies from file
     def load_cookies_from_file(self, filepath):
-        with open(filepath, 'r') as f:
+        with open(filepath, 'r', encoding='utf-8') as f:
             self.cookies = json.load(f)
 
     # Save cookies to file
     def save_cookies_to_file(self, filepath):
-        with open(filepath, 'w') as f:
-            json.dump(self.cookies, f, indent=4)
-    
+        with open(filepath, 'w', encoding='utf-8') as f:
+            json.dump(self.cookies, f, indent=4, ensure_ascii=False)
+
     # Save the full request history to a JSON file
     def save_history_to_file(self, filepath):
         try:
@@ -327,7 +355,6 @@ class HttpCraft:
             }
             with open(filepath, "w", encoding="utf-8") as f:
                 json.dump(history_dict, f, indent=2, ensure_ascii=False)
-
             print(f"[+] Request history successfully saved to '{filepath}'")
         except Exception as e:
             print(f"[!] Error saving request history: {e}")
@@ -337,33 +364,30 @@ class HttpCraft:
     ''' -------- REQUESTS -------- '''
     # Send a GET request to the specified path
     def get(self, path="", params=None, port=None):
-        return self._send_request("GET", path, data=params, port=port)
+        return self._send_request("GET", path, json=None, data=params, port=port)
 
     # Send a POST request to the specified path
-    def post(self, path="", json=None, port=None):
-        return self._send_request("POST", path, data=json, port=port)
+    def post(self, path="", json=None, data=None, port=None):
+        return self._send_request("POST", path, json=json, data=data, port=port)
 
     # Send a PUT request to the specified path
-    def put(self, path="", json=None, port=None):
-        return self._send_request("PUT", path, data=json, port=port)
+    def put(self, path="", json=None, data=None, port=None):
+        return self._send_request("PUT", path, json=json, data=data, port=port)
 
     # Send a DELETE request to the specified path
-    def delete(self, path="", json=None, port=None):
-        return self._send_request("DELETE", path, data=json, port=port)
+    def delete(self, path="", json=None, data=None, port=None):
+        return self._send_request("DELETE", path, json=json, data=data, port=port)
 
     # Send a PATCH request to the specified path
-    def patch(self, path="", json=None, port=None):
-        return self._send_request("PATCH", path, data=json, port=port)
+    def patch(self, path="", json=None, data=None, port=None):
+        return self._send_request("PATCH", path, json=json, data=data, port=port)
 
     # Send a HEAD request to the specified path
     def head(self, path="", port=None):
-        return self._send_request("HEAD", path, data=None, port=port)
+        return self._send_request("HEAD", path, json=None, data=None, port=port)
 
-    # Core method used by all HTTP verb wrappers above
-    from datetime import datetime
-
-    # Core method used by all HTTP verb wrappers above
-    def _send_request(self, method, path, data=None, port=None):
+    # Core method used by all HTTP verb wrappers
+    def _send_request(self, method, path, json=None, data=None, port=None):
         url = self._build_url(path, override_port=port)
         start = time.time()
 
@@ -375,15 +399,32 @@ class HttpCraft:
 
         if method in ["GET", "HEAD"]:
             kwargs["params"] = data or self.payload
+            payload_used = data or self.payload
+            payload_type = "form"
         else:
-            kwargs["json"] = data or self.payload
+            if json is not None:
+                kwargs["json"] = json
+                payload_used = json
+                payload_type = "json"
+            elif data is not None:
+                kwargs["data"] = data
+                payload_used = data
+                payload_type = "form"
+            else:
+                if self.payload_mode == "json":
+                    kwargs["json"] = self.payload
+                    payload_used = self.payload
+                    payload_type = "json"
+                else:
+                    kwargs["data"] = self.payload
+                    payload_used = self.payload
+                    payload_type = "form"
 
         response = request_func(url, **kwargs)
         elapsed = time.time() - start
 
         # Detect response type and body format
         content_type = response.headers.get("Content-Type", "").lower()
-
         if "application/json" in content_type:
             response_type = "json"
             try:
@@ -401,11 +442,12 @@ class HttpCraft:
             response_body = response.text
 
         # CSRF token update
+        csrf_token_updated = False
         if self.csrf_mode != "none":
             token = self.extract_csrf_token(response.text)
             if token:
                 self.add_cookie(self.csrf_field, token)
-                print(f"[+] CSRF token '{self.csrf_field}' updated in cookies.")
+                csrf_token_updated = True
 
         sent = response.request
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
@@ -417,7 +459,8 @@ class HttpCraft:
             method=sent.method,
             headers=dict(sent.headers),
             cookies=self.cookies.copy(),
-            payload=data or self.payload
+            payload=payload_used,
+            payload_type=payload_type
         )
 
         http_response = HttpCraftResponse(
@@ -431,7 +474,8 @@ class HttpCraft:
         http_exchange = HttpCraftExchange(
             timestamp=timestamp,
             request=http_request,
-            response=http_response
+            response=http_response,
+            csrf_token_updated=csrf_token_updated
         )
 
         self.history[timestamp] = http_exchange
@@ -439,24 +483,26 @@ class HttpCraft:
         return http_exchange
 
     # Print detailed information about a single HttpCraftExchange
-    def debug_response(self, exchange, limit_body: bool = True):
+    def debug_exchange(self, exchange, limit_body: bool = True):
         req = exchange.request
         res = exchange.response
 
         print(f"--- {exchange.timestamp} ---")
-        print(f"Base URL:     {req.url}")
-        print(f"Port:         {req.port}")
-        print(f"Path:         {req.path}")
-        print(f"Method:       {req.method}")
-        print(f"Status Code:  {res.status_code}")
-        print(f"Response Type:{res.response_type}")
+        print(f"Base URL:      {req.url}")
+        print(f"Port:          {req.port}")
+        print(f"Path:          {req.path}")
+        print(f"Method:        {req.method}")
+        print(f"Status Code:   {res.status_code}")
+        print(f"Response Type: {res.response_type}")
+        print(f"Payload Mode:  {req.payload_type}")
+        print(f"CSRF Updated:  {exchange.csrf_token_updated}")
         print("Headers:")
         print(json.dumps(req.headers, indent=2))
         print("Cookies:")
         print(json.dumps(req.cookies, indent=2))
         print("Payload:")
         print(json.dumps(req.payload, indent=2))
-        print(f"Elapsed Time: {round(res.elapsed_time * 1000, 2)} ms")
+        print(f"Elapsed Time:  {round(res.elapsed_time * 1000, 2)} ms")
 
         print("Response Body:")
         body = res.response_body
@@ -467,7 +513,6 @@ class HttpCraft:
             print(body_str[:500] + ("..." if limit_body and len(body_str) > 500 else ""))
 
         print("------------------------------\n")
-
 
     # Print a readable summary of the request history
     def print_history(self):
@@ -480,19 +525,21 @@ class HttpCraft:
             res = exchange.response
 
             print(f"--- {timestamp} ---")
-            print(f"Base URL:     {req.url}")
-            print(f"Port:         {req.port}")
-            print(f"Path:         {req.path}")
-            print(f"Method:       {req.method}")
-            print(f"Status Code:  {res.status_code}")
-            print(f"Response Type:{res.response_type}")
+            print(f"Base URL:      {req.url}")
+            print(f"Port:          {req.port}")
+            print(f"Path:          {req.path}")
+            print(f"Method:        {req.method}")
+            print(f"Status Code:   {res.status_code}")
+            print(f"Response Type: {res.response_type}")
+            print(f"Payload Mode:  {req.payload_type}")
+            print(f"CSRF Updated:  {exchange.csrf_token_updated}")
             print("Headers:")
             print(json.dumps(req.headers, indent=2))
             print("Cookies:")
             print(json.dumps(req.cookies, indent=2))
             print("Payload:")
             print(json.dumps(req.payload, indent=2))
-            print(f"Elapsed Time: {round(res.elapsed_time * 1000, 2)} ms")
+            print(f"Elapsed Time:  {round(res.elapsed_time * 1000, 2)} ms")
             print("Response Body:")
             body = res.response_body
             if isinstance(body, dict):
@@ -500,7 +547,6 @@ class HttpCraft:
             else:
                 print(body[:500] + ("..." if isinstance(body, str) and len(body) > 500 else ""))
             print("------------------------------\n")
-
 
     ''' -------------------------- '''
 

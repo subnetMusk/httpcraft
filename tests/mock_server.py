@@ -1,13 +1,9 @@
-from flask import Flask, request, jsonify, make_response, render_template_string
+from flask import Flask, request, jsonify, render_template_string, make_response
 
 app = Flask(__name__)
 CSRF_TOKEN = "secure123"
 
-@app.route('/')
-def index():
-    return "Flask test server running."
-
-@app.route('/echo', methods=['GET', 'POST', 'PUT', 'PATCH', 'DELETE'])
+@app.route("/echo", methods=["GET", "POST", "PUT", "PATCH", "DELETE"])
 def echo():
     return jsonify({
         "method": request.method,
@@ -18,7 +14,7 @@ def echo():
         "cookies": request.cookies
     })
 
-@app.route('/form')
+@app.route("/form")
 def form():
     html = f'''
     <html>
@@ -33,7 +29,7 @@ def form():
     '''
     return render_template_string(html)
 
-@app.route('/submit', methods=['POST'])
+@app.route("/submit", methods=["POST"])
 def submit():
     token = request.form.get("csrf_token")
     return jsonify({
@@ -42,11 +38,11 @@ def submit():
         "form": request.form
     })
 
-@app.route('/set_cookie')
+@app.route("/set_cookie")
 def set_cookie():
     resp = make_response("Cookie set")
     resp.set_cookie("sessionid", "abc123")
     return resp
 
 if __name__ == "__main__":
-    app.run(port=5000, debug=True)
+    app.run(port=5000)

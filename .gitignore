@@ -1,6 +1,7 @@
 gitignore
 __pycache__/
 *.pyc
-request_history.json
-session_config.json
 .env
+.venv/
+*.log
+*.json
