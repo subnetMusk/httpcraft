@@ -1,2 +1,0 @@
-[console_scripts]
-httpcraft = http_craft.cli:main

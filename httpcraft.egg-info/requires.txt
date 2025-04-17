@@ -1,6 +1,0 @@
-requests
-beautifulsoup4
-
-[dev]
-flask
-pytest
