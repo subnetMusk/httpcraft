@@ -12,7 +12,6 @@ setup(
     long_description_content_type="text/markdown",
     url="https://github.com/subnetMusk/httpcraft",
     packages=find_packages(),
-    py_modules=["http_craft"],
     entry_points={
         "console_scripts": [
             "httpcraft = http_craft.cli:main"
