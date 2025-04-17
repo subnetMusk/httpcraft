@@ -181,18 +181,70 @@ HTTPCRAFT_VERBOSE=true python3 runtests.py  # alternative
 
 ---
 
+
+## 🚀 CLI Usage (Optional)
+
+Although HttpCraft is intended for use as a Python library, it includes a minimal CLI interface for test execution and debugging purposes.
+
+### 🧪 Run internal test suite
+
+You can validate that the library is installed and working correctly by running:
+
+```bash
+httpcraft --run-tests
+```
+
+For more detailed output:
+
+```bash
+httpcraft --run-tests --verbose
+```
+
+This will execute the built-in test suite located in `tests/`.
+
+---
+
+### 🆘 CLI Help
+
+```bash
+httpcraft --help
+```
+
+This command will show a basic summary of CLI usage:
+
+```
+usage: httpcraft [-h] [--run-tests] [--verbose]
+
+HttpCraft - HTTP request crafting and inspection tool
+
+options:
+  -h, --help        Show this help message and exit
+  --run-tests       Run internal test suite
+  --verbose         Enable verbose test output
+```
+
+
+---
+
+
 ## 📁 Project Structure
 
 ```
 httpcraft/
-├── http_craft.py
-├── tests/
-│   ├── test_httpcraft.py
-│   ├── mock_server.py
-│   └── __init__.py
+├── README.md
+├── requirements.txt
 ├── requirements-dev.txt
+├── setup.cfg
 ├── setup.py
-└── runtests.py
+├── http_craft/
+│   ├── __init__.py
+│   ├── cli.py
+│   └── http_craft.py
+└── tests/
+    ├── __init__.py
+    ├── mock_server.py
+    ├── runtests.py
+    └── test_httpcraft.py
 ```
 
 ---

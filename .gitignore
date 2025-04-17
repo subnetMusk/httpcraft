@@ -1,7 +1,56 @@
-gitignore
+# Bytecode
 __pycache__/
-*.pyc
-.env
+*.py[cod]
+*.pyo
+
+# Virtual environments
 .venv/
+venv/
+env/
+
+# Egg metadata
+*.egg-info/
+.eggs/
+
+# Build / dist output
+build/
+dist/
+*.egg
+*.whl
+
+# VSCode / IDE
+.vscode/
+.idea/
+
+# OS metadata
+.DS_Store
+Thumbs.db
+
+# Logs and debug
 *.log
-*.json
+
+# Compiled files
+*.so
+*.o
+*.out
+*.class
+
+# Zip / archives
+*.zip
+
+# Coverage/test artifacts
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+*.py,cover
+.cache/
+.pytest_cache/
+
+# Test results
+test-output/
+junit-*.xml
+
+# Jupyter Notebooks (if not used)
+*.ipynb
