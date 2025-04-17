@@ -1,7 +1,7 @@
 import unittest
 import os
 import sys
-from http_craft import HttpCraft
+from http_craft.http_craft import HttpCraft
 
 # Parse verbosity flag
 VERBOSE = "--verbose" in sys.argv or os.getenv("HTTPCRAFT_VERBOSE", "false").lower() == "true"

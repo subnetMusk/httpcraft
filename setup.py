@@ -13,6 +13,11 @@ setup(
     url="https://github.com/subnetMusk/httpcraft",
     packages=find_packages(),
     py_modules=["http_craft"],
+    entry_points={
+        "console_scripts": [
+            "httpcraft = http_craft.cli:main"
+        ]
+    },
     install_requires=[
         "requests",
         "beautifulsoup4"
