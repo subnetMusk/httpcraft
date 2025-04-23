@@ -1,7 +1,7 @@
 import unittest
 import os
 import sys
-from http_craft.http_craft import HttpCraft
+from httpcraft import HttpCraft
 
 # Parse verbosity flag
 VERBOSE = "--verbose" in sys.argv or os.getenv("HTTPCRAFT_VERBOSE", "false").lower() == "true"
@@ -121,7 +121,7 @@ class TestHttpCraftFull(unittest.TestCase):
         log("TEST: History tracking and payload recording")
         self.client.set_payload({"track": "yes"}, mode="json")
         exchange = self.client.post("/echo")
-        self.assertIn(exchange.timestamp, self.client.history)
+        self.assertIn(exchange, self.client.history)
         log("  - Exchange recorded in history")
         self.assertEqual(exchange.request.payload.get("track"), "yes")
         self.assertEqual(exchange.request.payload_type, "json")

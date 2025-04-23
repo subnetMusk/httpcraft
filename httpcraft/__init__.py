@@ -1,1 +1,1 @@
-from http_craft.http_craft import HttpCraft
+from .core import HttpCraft

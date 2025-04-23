@@ -569,7 +569,7 @@ class HttpCraft:
         response = request_func(url, **kwargs)
         elapsed = time.time() - start
 
-        # Detect response type and body format
+        # Detect response type and body format (updated to handle binary content)
         content_type = response.headers.get("Content-Type", "").lower()
         if "application/json" in content_type:
             response_type = "json"
@@ -583,9 +583,12 @@ class HttpCraft:
         elif "text" in content_type:
             response_type = "text"
             response_body = response.text
+        elif "image" in content_type or "application/octet-stream" in content_type:
+            response_type = "binary"
+            response_body = response.content
         else:
             response_type = "unknown"
-            response_body = response.text
+            response_body = response.content
 
         # CSRF token update
         csrf_token_updated = False
@@ -624,7 +627,7 @@ class HttpCraft:
             csrf_token_updated=csrf_token_updated
         )
 
-        self.history[timestamp] = http_exchange
+        self.history.append(http_exchange)
 
         return http_exchange
 

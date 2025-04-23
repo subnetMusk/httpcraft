@@ -22,7 +22,7 @@ def main():
         print("\nAvailable CLI option:")
         print("  --run-tests     Run internal tests and check installation")
         print("\nExample:")
-        print("  import http_craft\n  client = http_craft.HttpCraft('http://example.com')")
+        print("  from httpcraft import HttpCraft\n  client = HttpCraft('http://example.com')")
 
 if __name__ == "__main__":
     main()
