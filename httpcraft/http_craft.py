@@ -73,7 +73,10 @@ class HttpCraftExchange:
 class HttpCraft:
     def __init__(self, base_url: str):
         parsed = urlparse(base_url)
-        self.scheme = parsed.scheme or "http"
+        if not parsed.scheme:
+            raise ValueError("URL must include a scheme (http:// or https://)")
+
+        self.scheme = parsed.scheme
         self.host = parsed.hostname
         self.port = parsed.port
         self.base_url = f"{self.scheme}://{self.host}"
@@ -82,14 +85,14 @@ class HttpCraft:
         self.payload = {}
         self.payload_mode = "json"  # default mode
         self.cookies = {}
-        self.history = {}
+        self.history = []
         self.session = requests.Session()
 
         self.csrf_mode = "none"
         self.csrf_field = "csrf_token"
 
     # Print the current configuration
-    def debug_config(self):
+    def print_config(self):
         print("--- HttpCraft Configuration ---")
         print("Target URL:", self.base_url)
         print("Host:", self.host)
@@ -100,6 +103,7 @@ class HttpCraft:
         print(json.dumps(self.headers, indent=2))
         print("Cookies:")
         print(json.dumps(self.cookies, indent=2))
+        print("Payload Mode:", self.payload_mode)
         print("Payload:")
         print(json.dumps(self.payload, indent=2))
 
@@ -114,7 +118,7 @@ class HttpCraft:
         self.payload = {}
         self.payload_mode = "json"  # default mode
         self.cookies = {}
-        self.history = {}
+        self.history = []
         self.session = requests.Session()
 
         self.csrf_mode = "none"
@@ -131,8 +135,10 @@ class HttpCraft:
 
     # Set a new target URL
     def set_target(self, url):
-        parsed = urlparse(url)
-        self.scheme = parsed.scheme or "http"
+        parsed = urlparse(base_url)
+        if not parsed.scheme:
+            raise ValueError("URL must include a scheme (http:// or https://)")
+        self.scheme = parsed.scheme
         self.host = parsed.hostname
         self.port = parsed.port
         self.base_url = f"{self.scheme}://{self.host}"
@@ -349,12 +355,9 @@ class HttpCraft:
     # Save the full request history to a JSON file
     def save_history_to_file(self, filepath):
         try:
-            history_dict = {
-                ts: exchange.to_dict()
-                for ts, exchange in self.history.items()
-            }
+            history_list = [exchange.to_dict() for exchange in self.history]
             with open(filepath, "w", encoding="utf-8") as f:
-                json.dump(history_dict, f, indent=2, ensure_ascii=False)
+                json.dump(history_list, f, indent=2, ensure_ascii=False)
             print(f"[+] Request history successfully saved to '{filepath}'")
         except Exception as e:
             print(f"[!] Error saving request history: {e}")
@@ -483,7 +486,7 @@ class HttpCraft:
         return http_exchange
 
     # Print detailed information about a single HttpCraftExchange
-    def debug_exchange(self, exchange, limit_body: bool = True):
+    def print_exchange(self, exchange, limit_body: bool = True):
         req = exchange.request
         res = exchange.response
 
@@ -520,33 +523,18 @@ class HttpCraft:
             print("[!] No request history available.")
             return
 
-        for timestamp, exchange in sorted(self.history.items()):
-            req = exchange.request
-            res = exchange.response
+        index = 0
+        for exchange in self.history:
+            print(f"[{index}]\n")
+            self.print_exchange(exchange, True)
+            index += 1
+    
 
-            print(f"--- {timestamp} ---")
-            print(f"Base URL:      {req.url}")
-            print(f"Port:          {req.port}")
-            print(f"Path:          {req.path}")
-            print(f"Method:        {req.method}")
-            print(f"Status Code:   {res.status_code}")
-            print(f"Response Type: {res.response_type}")
-            print(f"Payload Mode:  {req.payload_type}")
-            print(f"CSRF Updated:  {exchange.csrf_token_updated}")
-            print("Headers:")
-            print(json.dumps(req.headers, indent=2))
-            print("Cookies:")
-            print(json.dumps(req.cookies, indent=2))
-            print("Payload:")
-            print(json.dumps(req.payload, indent=2))
-            print(f"Elapsed Time:  {round(res.elapsed_time * 1000, 2)} ms")
-            print("Response Body:")
-            body = res.response_body
-            if isinstance(body, dict):
-                print(json.dumps(body, indent=2))
-            else:
-                print(body[:500] + ("..." if isinstance(body, str) and len(body) > 500 else ""))
-            print("------------------------------\n")
+    # Clear the request history
+    def reset_history(self):
+        self.history = []
+        print("[+] Request history cleared.")
+
 
     ''' -------------------------- '''
 
