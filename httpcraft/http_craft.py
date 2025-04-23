@@ -8,6 +8,8 @@ from dataclasses import dataclass
 import time
 import os
 from datetime import datetime
+import mimetypes
+import re
 
 @dataclass
 class HttpCraftRequest:
@@ -361,6 +363,147 @@ class HttpCraft:
             print(f"[+] Request history successfully saved to '{filepath}'")
         except Exception as e:
             print(f"[!] Error saving request history: {e}")
+ 
+    # Guess the file extension based on the first few bytes of the response body
+    def guess_extension_from_bytes(body: bytes):
+        signatures = [
+            (b"\x89PNG\r\n\x1a\n", ".png"),
+            (b"\xff\xd8\xff", ".jpg"),
+            (b"GIF87a", ".gif"),
+            (b"GIF89a", ".gif"),
+            (b"%PDF", ".pdf"),
+            (b"PK\x03\x04", ".zip"),
+            (b"Rar!\x1A\x07\x00", ".rar"),
+            (b"\x1F\x8B", ".gz"),
+            (b"OggS", ".ogg"),
+            (b"\x00\x00\x01\xba", ".mpg"),
+            (b"\x00\x00\x00\x18ftyp3gp", ".3gp"),
+            (b"ID3", ".mp3"),
+            (b"\x52\x49\x46\x46", ".wav"),  # RIFF header
+        ]
+        for sig, ext in signatures:
+            if body.startswith(sig):
+                return ext
+        return ".bin"
+
+    # Save a response to a file based on its content type
+    def save_response_to_file(self, exchange, filepath: str = None):
+        res = exchange.response
+        content_type = res.raw_headers.get("Content-Type", "").split(";")[0].strip().lower()
+
+        # Estensione da MIME (mimetypes + mapping manuale)
+        extension = mimetypes.guess_extension(content_type)
+
+        ext_map = {
+            "text/plain": ".txt",
+            "text/html": ".html",
+            "text/css": ".css",
+            "text/javascript": ".js",
+            "application/javascript": ".js",
+            "application/json": ".json",
+            "application/xml": ".xml",
+            "text/xml": ".xml",
+            "application/x-www-form-urlencoded": ".txt",
+            "text/csv": ".csv",
+            "image/png": ".png",
+            "image/jpeg": ".jpg",
+            "image/jpg": ".jpg",
+            "image/gif": ".gif",
+            "image/webp": ".webp",
+            "image/svg+xml": ".svg",
+            "image/bmp": ".bmp",
+            "image/x-icon": ".ico",
+            "image/tiff": ".tiff",
+            "font/woff": ".woff",
+            "font/woff2": ".woff2",
+            "application/font-woff": ".woff",
+            "application/font-woff2": ".woff2",
+            "application/pdf": ".pdf",
+            "application/msword": ".doc",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document": ".docx",
+            "application/vnd.ms-excel": ".xls",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": ".xlsx",
+            "application/vnd.ms-powerpoint": ".ppt",
+            "application/vnd.openxmlformats-officedocument.presentationml.presentation": ".pptx",
+            "application/zip": ".zip",
+            "application/x-tar": ".tar",
+            "application/x-gzip": ".gz",
+            "application/x-7z-compressed": ".7z",
+            "application/x-rar-compressed": ".rar",
+            "audio/mpeg": ".mp3",
+            "audio/wav": ".wav",
+            "audio/ogg": ".ogg",
+            "video/mp4": ".mp4",
+            "video/webm": ".webm",
+            "video/ogg": ".ogv",
+            "unknown": ".bin"
+        }
+
+        if not extension:
+            extension = ext_map.get(content_type)
+
+        # fallback su response_type
+        if not extension:
+            fallback_types = {
+                "json": ".json",
+                "html": ".html",
+                "text": ".txt",
+                "unknown": ".bin"
+            }
+            extension = fallback_types.get(res.response_type, None)
+
+        # fallback finale: sniffa i primi byte
+        if not extension:
+            body_preview = res.response_body
+            if isinstance(body_preview, str):
+                body_preview = body_preview.encode("utf-8", errors="ignore")
+            extension = guess_extension_from_bytes(body_preview[:32])
+
+        # Filename automatico se non fornito
+        if filepath is None:
+            sanitized_path = re.sub(r'[^\w\-]+', '_', exchange.request.path.strip("/"))
+            filename = f"{exchange.timestamp.replace(':', '').replace(' ', '_')}_{sanitized_path or 'index'}{extension}"
+            filepath = os.path.join("responses", filename)
+            os.makedirs(os.path.dirname(filepath), exist_ok=True)
+
+        try:
+            # Testuale o JSON
+            if res.response_type in ["json", "html", "text"] or "text" in content_type or "json" in content_type:
+                with open(filepath, "w", encoding="utf-8") as f:
+                    if isinstance(res.response_body, (dict, list)):
+                        json.dump(res.response_body, f, indent=2, ensure_ascii=False)
+                    else:
+                        f.write(str(res.response_body))
+            else:
+                with open(filepath, "wb") as f:
+                    body = res.response_body
+                    if isinstance(body, str):
+                        body = body.encode("utf-8", errors="ignore")
+                    f.write(body)
+            print(f"[+] Response salvata in '{filepath}'")
+        except Exception as e:
+            print(f"[!] Errore durante il salvataggio della risposta: {e}")
+
+    # Save the last response to a file
+    def save_last_response_to_file(self, filepath: str = None):
+        if not self.history:
+            print("[!] No request history available.")
+            return
+
+        last_exchange = self.history[-1]
+        self.save_response_to_file(last_exchange, filepath)
+
+    # Save a specific response from history to a file
+    def save_response_from_history_to_file(self, index: int, filepath: str = None):
+        if index < 0 or index >= len(self.history):
+            print("[!] Invalid index.")
+            return
+
+        exchange = self.get_exchange(index)
+        if not exchange:
+            print("[!] No exchange found at this index.")
+            return
+        self.save_response_to_file(exchange, filepath)
     ''' -------------------------- '''
 
 
@@ -490,7 +633,8 @@ class HttpCraft:
         req = exchange.request
         res = exchange.response
 
-        print(f"--- {exchange.timestamp} ---")
+        print(f"------------------------------")
+        print(f"Timestamp:     {exchange.timestamp}")
         print(f"Base URL:      {req.url}")
         print(f"Port:          {req.port}")
         print(f"Path:          {req.path}")
@@ -525,16 +669,43 @@ class HttpCraft:
 
         index = 0
         for exchange in self.history:
-            print(f"[{index}]\n")
+            print(f"[{index}]")
             self.print_exchange(exchange, True)
             index += 1
     
+    # Print a summary of the last exchange in the history
+    def print_last_exchange(self):
+        if not self.history:
+            print("[!] No request history available.")
+            return
+
+        last_exchange = self.history[-1]
+        self.print_exchange(last_exchange, True)
+    
+    # Print a specific request from the history
+    def print_exchange_from_history(self, index):
+        if index < 0 or index >= len(self.history):
+            print("[!] Invalid index.")
+            return
+
+        exchange = self.get_exchange(index)
+        if not exchange:
+            print("[!] No exchange found at this index.")
+            return
+        print_exchange(exchange, True)
+
+    # Return a specific request from the history
+    def get_exchange(self, index):
+        if index < 0 or index >= len(self.history):
+            print("[!] Invalid index.")
+            return
+
+        return self.history[index]
 
     # Clear the request history
     def reset_history(self):
         self.history = []
         print("[+] Request history cleared.")
-
 
     ''' -------------------------- '''
 

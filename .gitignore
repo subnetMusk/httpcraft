@@ -54,3 +54,12 @@ junit-*.xml
 
 # Jupyter Notebooks (if not used)
 *.ipynb
+
+# File e script di test manuali locali
+httpcraft/tests/locals/
+httpcraft/tests/locals/mock_saver_server.py
+httpcraft/tests/locals/test_saving_script.py
+httpcraft/tests/locals/test_image.png
+
+# Cartella con risposte salvate dai test
+responses/
