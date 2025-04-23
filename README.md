@@ -64,8 +64,8 @@ Metadata about the HTTP response:
 HttpCraftResponse(
     status_code: int,
     elapsed_time: float,
-    response_type: str,  # "json", "html", "text", "unknown"
-    response_body: str | dict,
+    response_type: str,  # "json", "html", "text", "binary", "unknown"
+    response_body: str | dict | bytes,
     raw_headers: dict
 )
 ```
@@ -163,6 +163,9 @@ load_headers_from_file(filepath)
 save_cookies_to_file(filepath)
 load_cookies_from_file(filepath)
 save_history_to_file(filepath)
+save_response_to_file(exchange, filepath=None)
+save_last_response_to_file(filepath=None)
+save_response_from_history_to_file(index: int, filepath=None)
 ```
 
 
@@ -170,6 +173,10 @@ save_history_to_file(filepath)
 ```python
 debug_exchange(exchange, limit_body=True)
 print_history()
+print_last_exchange()
+print_exchange_from_history(index)
+get_exchange(index)
+reset_history()
 ```
 
 ---
@@ -204,9 +211,50 @@ httpcraft --help
 
 ## ✅ Test Behavior
 
-Tests run automatically in CLI mode with `--run-tests` and do **not require any manual setup**. A local test server is launched automatically.
+Tests are divided into two categories:
+
+### 🔹 Standard Integration Tests
+These run automatically with the CLI using:
+
+```bash
+httpcraft --run-tests
+```
+
+They include tests for:
+- GET, POST, PUT, DELETE, PATCH, HEAD methods
+- JSON and form payloads
+- Cookie and CSRF token handling
+- History tracking and basic output
+
+The CLI launches a mock Flask server (`mock_server.py`) and executes these tests in isolation.
 
 ---
+
+### 🔸 Local Manual Tests
+Optional test scripts are available in:
+
+```
+httpcraft/tests/locals/
+```
+
+These include:
+- HTML content with embedded images and legal disclaimers
+- Image and binary file downloads to verify MIME handling and file integrity
+- Timestamp-based file naming to validate consistency
+- Manual inspection flows for edge-case content types
+
+To run the full manual test sequence in one step:
+
+```bash
+python httpcraft/tests/locals/run_all_manual_tests.py
+```
+
+This script will:
+- Launch the mock server
+- Run the manual saving tests
+- Shut down the server automatically afterward
+
+These tests are not part of the automated suite and are intended for manual development/debugging only.
 
 
 ## 📁 Project Structure
@@ -216,12 +264,18 @@ httpcraft/
 ├── httpcraft/
 │   ├── __init__.py
 │   ├── cli.py
-│   └── httpcraft.py
-├── tests/
-│   ├── __init__.py
-│   ├── mock_server.py
-│   ├── runtests.py
-│   └── test_httpcraft.py
+│   ├── core.py
+│   └── tests/
+│       ├── __init__.py
+│       ├── test_httpcraft.py
+│       ├── runtests.py
+│       ├── mock_server.py
+│       └── locals/
+│           ├── mock_saver_server.py
+│           ├── test_saving_script.py
+│           ├── run_all_manual_tests.py
+│           ├── test_image.png
+│           └── responses/
 ├── README.md
 ├── setup.py
 ├── setup.cfg
@@ -233,4 +287,4 @@ httpcraft/
 
 ## 📄 License
 
-MIT License. Built with ❤️ by subnetMusk.
+MIT License. Built with 💬@#$%! by subnetMusk.
